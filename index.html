@@ -5,9 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Birthday Color Archive</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%0A%20%20%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%2260%22%20height%3D%2260%22%20rx%3D%2214%22%20fill%3D%22%23508BC3%22%2F%3E%0A%20%20%3Crect%20x%3D%225%22%20y%3D%225%22%20width%3D%2254%22%20height%3D%2254%22%20rx%3D%2212%22%20fill%3D%22none%22%20stroke%3D%22%23FFFFFF%22%20stroke-opacity%3D%220.18%22%20stroke-width%3D%222%22%2F%3E%0A%20%20%3Cpath%20fill%3D%22%23F8F7F2%22%20fill-rule%3D%22evenodd%22%20d%3D%22M20%2012h24c3.3%200%206%202.7%206%206v30c0%203.3-2.7%206-6%206H20c-3.3%200-6-2.7-6-6V18c0-3.3%202.7-6%206-6Zm4%206c-2.2%200-4%201.8-4%204v16c0%202.2%201.8%204%204%204h16c2.2%200%204-1.8%204-4V22c0-2.2-1.8-4-4-4H24Z%22%2F%3E%0A%3C%2Fsvg%3E">
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-B5KT7EX6GC"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-B5KT7EX6GC');
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; font-family:Helvetica,Arial,sans-serif !important; }
+button, a { -webkit-tap-highlight-color: transparent; }
 body { width:100vw; height:100vh; overflow:hidden; font-family:Helvetica,Arial,sans-serif; background:#0a0a1e; }
 #bg { position:fixed; inset:0; z-index:0; }
 :root { --signatureRight: 12px; --signatureWidth: 215px; }
@@ -5833,6 +5842,46 @@ html, body {
   }
 }
 
+/* v135: requested final polish */
+@media (max-width:680px){
+  body:not(.result-active) .back-btn{
+    display:none !important;
+    opacity:0 !important;
+    visibility:hidden !important;
+    pointer-events:none !important;
+  }
+  .wallpaper-layout{
+    margin-top:14px !important;
+  }
+  .wallpaper-card,
+  .color-card-panel{
+    padding-top:44px !important;
+  }
+  .wallpaper-card h2,
+  .color-card-title{
+    margin-top:0 !important;
+  }
+}
+.wallpaper-card,
+.color-card-panel{
+  padding-top:44px !important;
+}
+.wallpaper-card h2,
+.color-card-title{
+  margin-top:0 !important;
+}
+.back-btn .back-label{
+  transform:translateX(-3px) !important;
+}
+@media (max-width:680px){
+  body.result-active:not(.result-create-bottom) .back-label{
+    transform:translateX(-4px) !important;
+  }
+  body.result-active:not(.result-create-bottom) .back-text-word{
+    font-weight:480 !important;
+  }
+}
+
 /* v133: mobile Back appears in place instead of sliding from the home signature position */
 @media (max-width:680px){
   body.result-active .signature-stack{
@@ -5858,7 +5907,42 @@ html, body {
 body.result-exiting .result-screen{
   opacity:0 !important;
   pointer-events:none !important;
-  transition:opacity .9s ease !important;
+  transition:opacity .45s ease !important;
+}
+body.result-exit-from-bottom .signature-stack .back-btn{
+  display:none !important;
+  opacity:0 !important;
+  visibility:hidden !important;
+  pointer-events:none !important;
+}
+
+/* v136: requested spacing, faster exit, and bottom-back flash guard */
+.wallpaper-card,
+.color-card-panel{
+  padding-top:30px !important;
+}
+@media (max-width:680px){
+  .wallpaper-card,
+  .color-card-panel{
+    padding-top:30px !important;
+  }
+  .wallpaper-card h2,
+  .color-card-title{
+    margin-bottom:25px !important;
+  }
+  .color-card-title{
+    margin-bottom:9px !important;
+  }
+  .color-card-preview-stage,
+  .wallpaper-preview-wrap{
+    margin-top:0 !important;
+  }
+  .result-bottom-back-mobile,
+  .result-bottom-back-mobile:active,
+  .result-bottom-back-mobile:focus{
+    -webkit-tap-highlight-color:transparent !important;
+    outline:none !important;
+  }
 }
 
 </style>
@@ -5965,7 +6049,6 @@ body.result-exiting .result-screen{
   <div class="color-card-panel" role="dialog" aria-modal="true" aria-labelledby="colorCardTitle">
     <button class="color-card-close" type="button" onclick="closeColorCardPage()" aria-label="Close card page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6L18 18"></path><path d="M18 6L6 18"></path></svg></button>
 
-    <div class="color-card-eyebrow">Birthday Color Archive</div>
     <h2 class="color-card-title" id="colorCardTitle">Card</h2>
 
     <div class="color-card-layout">
@@ -6131,7 +6214,7 @@ body.result-exiting .result-screen{
           <span>Card</span>
         </button>
       </div>
-      <button class="result-bottom-back-mobile" type="button" onclick="goBack()" aria-label="Back">
+      <button class="result-bottom-back-mobile" type="button" onclick="goBack(event)" aria-label="Back">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M12 4v14"></path>
           <path d="M6.5 12.5L12 18l5.5-5.5"></path>
@@ -6142,7 +6225,7 @@ body.result-exiting .result-screen{
 </div>
 
 <div class="signature-stack">
-  <button class="back-btn" id="backBtn" onclick="goBack()">
+  <button class="back-btn" id="backBtn" onclick="goBack(event)">
   <span class="back-label"><svg class="back-text-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 6.5L9 12l5.5 5.5"></path><path d="M9.8 12H18"></path></svg><span class="back-text-word">Back</span></span>
   <svg class="back-arrow-icon" viewBox="0 0 24 24" aria-hidden="true">
     <path d="M12 4v14"></path>
@@ -10643,7 +10726,9 @@ function refreshPickersSoon(){
   setTimeout(()=>{monthPicker.refresh();dayPicker.refresh();},360);
 }
 window.addEventListener('resize',refreshPickersSoon);
+window.addEventListener('resize',()=>requestAnimationFrame(fitMobileSingleWordResultNames));
 window.addEventListener('orientationchange',refreshPickersSoon);
+window.addEventListener('orientationchange',()=>setTimeout(fitMobileSingleWordResultNames,120));
 window.addEventListener('load',refreshPickersSoon);
 window.addEventListener('load',()=>{
   const deepLinkDate=getUrlDateParams();
@@ -10684,11 +10769,44 @@ function formatDescriptionHTML(text){
   return safe.replace(/\.\s+/g, '.<br>');
 }
 
+function fitSingleWordTextForMobile(el,minPx){
+  if(!el)return;
+  el.style.removeProperty('font-size');
+  el.style.removeProperty('white-space');
+  el.style.removeProperty('overflow-wrap');
+  el.style.removeProperty('word-break');
+
+  const text=(el.textContent || '').trim();
+  const isMobile=window.matchMedia('(max-width: 680px)').matches;
+  if(!isMobile || !text || /\s/.test(text))return;
+
+  el.style.setProperty('white-space','nowrap','important');
+  el.style.setProperty('overflow-wrap','normal','important');
+  el.style.setProperty('word-break','normal','important');
+
+  requestAnimationFrame(()=>{
+    const available=el.clientWidth || Math.max(1,window.innerWidth-44);
+    let size=parseFloat(getComputedStyle(el).fontSize);
+    if(!available || !size)return;
+    for(let i=0;i<18 && el.scrollWidth>available+1;i++){
+      size=Math.max(minPx,size*0.94);
+      el.style.setProperty('font-size',`${size}px`,'important');
+      if(size<=minPx)break;
+    }
+  });
+}
+
+function fitMobileSingleWordResultNames(){
+  fitSingleWordTextForMobile(document.getElementById('resultName'),34);
+  fitSingleWordTextForMobile(document.getElementById('resultMiniName'),24);
+}
+
 
 // Special-date hearts. Format: "month-day".
 const SPECIAL_HEART_DATES = new Set([
   '11-10', // 10 November
   '6-23',  // 23 June
+  '6-27',  // 27 June
   '6-30',  // 30 June
   '5-8'    // 8 May
 ]);
@@ -10710,7 +10828,7 @@ function triggerHeartBurst(baseColor){
     heart.className='heart-burst';
     const x=4 + Math.random()*92;
     const dx=(Math.random()*2-1)*(window.innerWidth*(isMobile?0.10:0.07));
-    const size=(isMobile?8:10)+Math.random()*(isMobile?16:20);
+    const size=(isMobile?24:32)+Math.random()*(isMobile?38:56);
     const duration=2.7+Math.random()*1.35;
     heart.style.setProperty('--heart-x', x+'%');
     heart.style.setProperty('--heart-dx', dx.toFixed(1)+'px');
@@ -10725,32 +10843,35 @@ function triggerHeartBurst(baseColor){
   setTimeout(()=>{layer.remove();}, 4600);
 }
 
-const RESULT_EXIT_MS=900;
+const RESULT_EXIT_MS=450;
 let resultExitTimer=null;
 let resultChromeOriginals=null;
 let resultExitScreenOverflow='';
 
-function getResultChromeElements(){
-  return [
+function getResultChromeElements(includeSignature=true){
+  const elements=[
     document.getElementById('resultActions'),
-    document.getElementById('resultCreativeActions'),
-    document.querySelector('.signature-stack')
-  ].filter(Boolean);
+    document.getElementById('resultCreativeActions')
+  ];
+  if(includeSignature){
+    elements.push(document.querySelector('.signature-stack'));
+  }
+  return elements.filter(Boolean);
 }
 
-function captureResultChromeOriginals(){
+function captureResultChromeOriginals(includeSignature=true){
   if(resultChromeOriginals)return;
-  resultChromeOriginals=getResultChromeElements().map(el=>({
+  resultChromeOriginals=getResultChromeElements(includeSignature).map(el=>({
     el,
     parent:el.parentNode,
     next:el.nextSibling
   }));
 }
 
-function moveResultChromeIntoScreen(){
+function moveResultChromeIntoScreen(includeSignature=true){
   const rs=document.getElementById('resultScreen');
   if(!rs)return;
-  captureResultChromeOriginals();
+  captureResultChromeOriginals(includeSignature);
   resultChromeOriginals.forEach(({el})=>{
     if(el.parentNode!==rs){
       rs.appendChild(el);
@@ -10776,6 +10897,7 @@ function restoreResultChrome(){
     rs.style.overflow=resultExitScreenOverflow;
   }
   resultExitScreenOverflow='';
+  resultChromeOriginals=null;
 }
 
 function findColor(){
@@ -10784,7 +10906,7 @@ function findColor(){
     resultExitTimer=null;
   }
   restoreResultChrome();
-  document.body.classList.remove('result-exiting');
+  document.body.classList.remove('result-exiting','result-exit-from-bottom');
   const m=monthPicker.getSelected()+1,d=dayPicker.getSelected()+1;
   window.currentResultMonth=m;
   window.currentResultDay=d;
@@ -10833,6 +10955,7 @@ function findColor(){
   if(scrollHint){scrollHint.classList.remove('hidden');}
   rs.classList.add('visible');
   document.body.classList.add('result-active');
+  fitMobileSingleWordResultNames();
   document.getElementById('backBtn').classList.add('visible');
   document.getElementById('mainUI').style.opacity='0';
   document.getElementById('mainUI').style.pointerEvents='none';
@@ -10840,12 +10963,19 @@ function findColor(){
     setTimeout(()=>triggerHeartBurst(color.hex), 260);
   }
 }
-function goBack(){
+function goBack(event){
   const rs=document.getElementById('resultScreen');
   const scrollHint=document.getElementById('scrollHint');
   const backBtn=document.getElementById('backBtn');
   if(resultExitTimer || document.body.classList.contains('result-exiting')) return;
-  moveResultChromeIntoScreen();
+  const exitFromBottom=!!(event && event.currentTarget && event.currentTarget.classList.contains('result-bottom-back-mobile'));
+  document.body.classList.toggle('result-exit-from-bottom',exitFromBottom);
+  if(exitFromBottom && backBtn){
+    backBtn.style.display='none';
+    backBtn.style.opacity='0';
+    backBtn.style.pointerEvents='none';
+  }
+  moveResultChromeIntoScreen(!exitFromBottom);
   document.body.classList.add('result-exiting');
 
   resultExitTimer=setTimeout(()=>{
@@ -10868,7 +10998,7 @@ function goBack(){
     }
     if(scrollHint){scrollHint.classList.remove('hidden');}
 
-    document.body.classList.remove('result-active','result-create-bottom','result-exiting');
+    document.body.classList.remove('result-active','result-create-bottom','result-exiting','result-exit-from-bottom');
     restoreResultChrome();
     const sigResetBack=document.querySelector('.signature-stack');
     if(sigResetBack){sigResetBack.style.setProperty('--backSideOpacity','1');}
@@ -10882,6 +11012,7 @@ function goBack(){
 
     requestAnimationFrame(()=>{
       if(backBtn){
+        backBtn.style.display='';
         backBtn.style.opacity='';
         backBtn.style.pointerEvents='';
       }
@@ -10898,7 +11029,6 @@ function goBack(){
 function getResultShareUrl(){
   const month = window.currentResultMonth || (monthPicker.getSelected()+1);
   const day = window.currentResultDay || (dayPicker.getSelected()+1);
-  // Short clean link. Works on Vercel with the included rewrite rule.
   return `${window.location.origin}/m${month}d${day}`;
 }
 function dayOfYearToDate(dayOfYear){
@@ -10944,6 +11074,16 @@ function getUrlDateParams(){
   if(day < 1 || day > DAYS_IN_MONTH[month-1]) return null;
   return {month, day};
 }
+function openDateFromUrl(delay=80){
+  const deepLinkDate=getUrlDateParams();
+  if(!deepLinkDate)return false;
+  monthPicker.setSelected(deepLinkDate.month-1,false);
+  dayPicker.setItems(Array.from({length:DAYS_IN_MONTH[deepLinkDate.month-1]},(_,i)=>String(i+1)));
+  dayPicker.setSelected(deepLinkDate.day-1,false);
+  setTimeout(()=>findColor(),delay);
+  return true;
+}
+window.addEventListener('hashchange',()=>openDateFromUrl(40));
 async function copyLink(){
   const url=getResultShareUrl();
   const btn=document.querySelector('.result-actions .copy-btn');
