@@ -19,12 +19,48 @@
   gtag('js', new Date());
   gtag('config', 'G-B5KT7EX6GC');
 </script>
+<script>
+  (function(){
+    var days=[31,29,31,30,31,30,31,31,30,31,30,31];
+    var path=(window.location.pathname || '').replace(/\/+$/,'');
+    var hash=(window.location.hash || '').replace(/^#/,'');
+    var params=new URLSearchParams(window.location.search || '');
+    function dayOfYearToDate(n){
+      var remaining=Number(n);
+      if(!Number.isFinite(remaining) || remaining<1 || remaining>366){ return null; }
+      for(var i=0;i<days.length;i++){
+        if(remaining<=days[i]){ return {month:i+1, day:remaining}; }
+        remaining-=days[i];
+      }
+      return null;
+    }
+    var match=path.match(/^\/m(\d{1,2})d(\d{1,2})$/i) || hash.match(/^m(\d{1,2})d(\d{1,2})$/i);
+    var month=match ? Number(match[1]) : Number(params.get('m'));
+    var day=match ? Number(match[2]) : Number(params.get('d'));
+    if(!month || !day){
+      match=path.match(/^\/d(\d{1,3})$/i);
+      var converted=match ? dayOfYearToDate(match[1]) : null;
+      if(converted){ month=converted.month; day=converted.day; }
+    }
+    if(Number.isFinite(month) && Number.isFinite(day) && month>=1 && month<=12 && day>=1 && day<=days[month-1]){
+      document.documentElement.classList.add('deep-link-start');
+    }
+  })();
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; font-family:Helvetica,Arial,sans-serif !important; }
 button, a { -webkit-tap-highlight-color: transparent; }
 body { width:100vw; height:100vh; overflow:hidden; font-family:Helvetica,Arial,sans-serif; background:#0a0a1e; }
 #bg { position:fixed; inset:0; z-index:0; }
+html.deep-link-start #bg,
+html.deep-link-start .main-ui,
+html.deep-link-start .site-menu,
+html.deep-link-start .signature-stack {
+  opacity:0 !important;
+  pointer-events:none !important;
+  transition:none !important;
+}
 :root { --signatureRight: 12px; --signatureWidth: 215px; }
 
 .main-ui {
@@ -10736,14 +10772,6 @@ window.addEventListener('resize',()=>requestAnimationFrame(fitMobileSingleWordRe
 window.addEventListener('orientationchange',refreshPickersSoon);
 window.addEventListener('orientationchange',()=>setTimeout(fitMobileSingleWordResultNames,120));
 window.addEventListener('load',refreshPickersSoon);
-window.addEventListener('load',()=>{
-  const deepLinkDate=getUrlDateParams();
-  if(!deepLinkDate) return;
-  monthPicker.setSelected(deepLinkDate.month-1,false);
-  dayPicker.setItems(Array.from({length:DAYS_IN_MONTH[deepLinkDate.month-1]},(_,i)=>String(i+1)));
-  dayPicker.setSelected(deepLinkDate.day-1,false);
-  setTimeout(()=>findColor(),120);
-});
 
 function getReadableTextColors(hex){
   const clean=hex.replace('#','');
@@ -10906,7 +10934,8 @@ function restoreResultChrome(){
   resultChromeOriginals=null;
 }
 
-function findColor(){
+function findColor(options={}){
+  const instant=!!(options && options.instant);
   if(resultExitTimer){
     clearTimeout(resultExitTimer);
     resultExitTimer=null;
@@ -10938,7 +10967,7 @@ function findColor(){
   document.getElementById('resultHexBot').textContent=color.hex;
   document.getElementById('resultDay').textContent=doy+' / 366';
   const rs=document.getElementById('resultScreen');
-  rs.style.transition='';
+  rs.style.transition=instant ? 'none' : '';
   rs.style.opacity='';
   rs.style.pointerEvents='';
   rs.classList.toggle('hex-title-hidden', !titleHexVisible);
@@ -10965,6 +10994,10 @@ function findColor(){
   document.getElementById('backBtn').classList.add('visible');
   document.getElementById('mainUI').style.opacity='0';
   document.getElementById('mainUI').style.pointerEvents='none';
+  document.documentElement.classList.remove('deep-link-start');
+  if(instant){
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{ rs.style.transition=''; }));
+  }
   if(isHeartDate(m,d)){
     setTimeout(()=>triggerHeartBurst(color.hex), 260);
   }
@@ -11080,16 +11113,24 @@ function getUrlDateParams(){
   if(day < 1 || day > DAYS_IN_MONTH[month-1]) return null;
   return {month, day};
 }
-function openDateFromUrl(delay=80){
+function openDateFromUrl(options=80){
+  const config=typeof options==='number' ? {delay:options} : (options || {});
+  const delay=Number(config.delay || 0);
+  const instant=!!config.instant;
   const deepLinkDate=getUrlDateParams();
   if(!deepLinkDate)return false;
   monthPicker.setSelected(deepLinkDate.month-1,false);
   dayPicker.setItems(Array.from({length:DAYS_IN_MONTH[deepLinkDate.month-1]},(_,i)=>String(i+1)));
   dayPicker.setSelected(deepLinkDate.day-1,false);
-  setTimeout(()=>findColor(),delay);
+  const open=()=>findColor({instant});
+  if(delay>0){
+    setTimeout(open,delay);
+  }else{
+    open();
+  }
   return true;
 }
-window.addEventListener('hashchange',()=>openDateFromUrl(40));
+window.addEventListener('hashchange',()=>openDateFromUrl({delay:40}));
 async function copyLink(){
   const url=getResultShareUrl();
   const btn=document.querySelector('.result-actions .copy-btn');
@@ -11246,6 +11287,10 @@ function toggleTitleHex(){
 }
 updateTitleHexButton();
 
+const initialUrlOpened=openDateFromUrl({delay:0, instant:true});
+if(!initialUrlOpened){
+  document.documentElement.classList.remove('deep-link-start');
+}
 
 
 const SEASONS = ["Winter", "Spring", "Summer", "Autumn"];
