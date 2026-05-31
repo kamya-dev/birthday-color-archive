@@ -11463,6 +11463,24 @@ function getWallpaperSourceData(){
   };
 }
 
+function trackAnalyticsEvent(eventName, params={}){
+  try{
+    if(typeof window.gtag === 'function'){
+      window.gtag('event', eventName, params);
+    }
+  }catch(err){}
+}
+
+function getAnalyticsColorParams(data){
+  return {
+    color_name: data.name || '',
+    color_hex: data.hex || '',
+    birthday_month: data.month || '',
+    birthday_day: data.day || '',
+    birthday_date: data.month && data.day ? `${data.month}-${String(data.day).padStart(2,'0')}` : ''
+  };
+}
+
 function updateWallpaperOptionButtons(){
   const map = [
     ['japanese','wpToggleJapanese','Japanese label'],
@@ -11665,6 +11683,12 @@ function downloadWallpaper(){
   link.download=`${safeName}-${isDesktop ? 'desktop' : 'mobile'}-wallpaper.png`;
   link.href=canvas.toDataURL('image/png');
   link.click();
+  trackAnalyticsEvent('download_wallpaper', {
+    ...getAnalyticsColorParams(data),
+    wallpaper_format: isDesktop ? 'desktop' : 'mobile',
+    wallpaper_japanese: wallpaperOptions.japanese && data.nativeName ? 'on' : 'off',
+    wallpaper_meaning: wallpaperOptions.meaning ? 'on' : 'off'
+  });
 }
 
 
@@ -11882,11 +11906,17 @@ function makeColorCardBlob(){
 async function downloadColorCard(){
   const blob=await makeColorCardBlob();
   if(!blob)return;
+  const data=getColorCardSourceData();
   const link=document.createElement('a');
   const url=URL.createObjectURL(blob);
   link.download=getColorCardFileName();
   link.href=url;
   link.click();
+  trackAnalyticsEvent('download_color_card', {
+    ...getAnalyticsColorParams(data),
+    card_corner: colorCardCornerMode,
+    card_owner_filled: getColorCardOwnerName() === 'Your' ? 'no' : 'yes'
+  });
   setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 async function shareColorCard(){
