@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!-- Site Basligi -->
-<title>Learn Your Birthday Color | Birthday Color Archive</title>
+<title>Birthday Color Archive</title>
 
 <!-- Site Aciklamasi -->
 <meta name="description" content="A small color ritual for birthdays. Choose a date to discover your personal color, its Japanese label, keywords, and a short meaning.">
@@ -11588,13 +11588,21 @@ function wrapCanvasText(ctx, text, x, y, maxWidth, lineHeight){
   return y;
 }
 
-function getCanvasWrappedLines(ctx, text, maxWidth){
+function getCanvasTextWidth(ctx, text, letterSpacing=0){
+  const chars=Array.from(String(text || ''));
+  if(!letterSpacing || chars.length < 2){
+    return ctx.measureText(String(text || '')).width;
+  }
+  return chars.reduce((width,char)=>width + ctx.measureText(char).width,0) + letterSpacing*(chars.length-1);
+}
+
+function getCanvasWrappedLines(ctx, text, maxWidth, letterSpacing=0){
   const words=String(text || '').trim().split(/\s+/).filter(Boolean);
   const lines=[];
   let line='';
   words.forEach(word=>{
     const test=line ? line + ' ' + word : word;
-    if(ctx.measureText(test).width > maxWidth && line){
+    if(getCanvasTextWidth(ctx, test, letterSpacing) > maxWidth && line){
       lines.push(line);
       line=word;
     }else{
@@ -11605,22 +11613,35 @@ function getCanvasWrappedLines(ctx, text, maxWidth){
   return lines;
 }
 
+function drawCanvasTextLine(ctx, text, x, y, letterSpacing=0){
+  if(!letterSpacing){
+    ctx.fillText(text, x, y);
+    return;
+  }
+  let cursor=x;
+  Array.from(String(text || '')).forEach(char=>{
+    ctx.fillText(char, cursor, y);
+    cursor += ctx.measureText(char).width + letterSpacing;
+  });
+}
+
 function buildWallpaperDrawItems(ctx, data, dims){
   const isDesktop = wallpaperFormat === 'desktop';
-  const blockLeft = dims.w * (isDesktop ? 0.07 : 0.09);
-  const blockRight = dims.w * (isDesktop ? 0.10 : 0.09);
+  const blockLeft = dims.w * (isDesktop ? 0.048 : 0.07);
+  const blockRight = dims.w * (isDesktop ? 0.10 : 0.08);
   const blockWidth = dims.w - blockLeft - blockRight;
   const items=[];
 
-  const nameSize = dims.w * (isDesktop ? 0.052 : 0.082);
+  const nameSize = dims.w * (isDesktop ? 0.052 : 0.108);
   const nameLine = nameSize * (isDesktop ? 0.96 : 0.94);
+  const nameLetterSpacing = nameSize * -0.03;
   ctx.font = `800 ${nameSize}px Helvetica, Arial, sans-serif`;
-  const nameLines=getCanvasWrappedLines(ctx, data.name || '', blockWidth);
-  items.push({type:'name', lines:nameLines, size:nameSize, lineHeight:nameLine, weight:800, alpha:1, maxWidth:blockWidth});
+  const nameLines=getCanvasWrappedLines(ctx, data.name || '', blockWidth, nameLetterSpacing);
+  items.push({type:'name', lines:nameLines, size:nameSize, lineHeight:nameLine, weight:800, alpha:1, maxWidth:blockWidth, letterSpacing:nameLetterSpacing});
 
   if(wallpaperOptions.japanese && data.nativeName){
-    const nativeSize=dims.w*(isDesktop ? 0.023 : 0.041);
-    const nativeLine=nativeSize*1.2;
+    const nativeSize=dims.w*(isDesktop ? 0.023 : 0.056);
+    const nativeLine=nativeSize*1.18;
     const gap=dims.w*(isDesktop ? 0.020 : 0.038);
     ctx.font = `600 ${nativeSize}px Helvetica, Arial, sans-serif`;
     const nativeLines=getCanvasWrappedLines(ctx, data.nativeName || '', blockWidth);
@@ -11628,9 +11649,9 @@ function buildWallpaperDrawItems(ctx, data, dims){
   }
 
   if(wallpaperOptions.meaning && data.description){
-    const meaningSize=dims.w*(isDesktop ? 0.0138 : 0.0255);
-    const meaningLine=meaningSize*1.4;
-    const meaningWidth=blockWidth*(isDesktop ? 0.52 : 0.82);
+    const meaningSize=dims.w*(isDesktop ? 0.0138 : 0.035);
+    const meaningLine=meaningSize*1.42;
+    const meaningWidth=blockWidth*(isDesktop ? 0.52 : 0.84);
     const gap=dims.w*(isDesktop ? 0.028 : 0.052);
     ctx.font = `500 ${meaningSize}px Helvetica, Arial, sans-serif`;
     const meaningLines=getCanvasWrappedLines(ctx, data.description || '', meaningWidth);
@@ -11646,7 +11667,38 @@ function buildWallpaperDrawItems(ctx, data, dims){
   return {items, x:blockLeft, y:top};
 }
 
-function downloadWallpaper(){
+function canvasToPngBlob(canvas){
+  const dataUrl=canvas.toDataURL('image/png');
+  const parts=dataUrl.split(',');
+  const mime=(parts[0].match(/:(.*?);/) || [,'image/png'])[1];
+  const binary=atob(parts[1]);
+  const bytes=new Uint8Array(binary.length);
+  for(let i=0;i<binary.length;i++){
+    bytes[i]=binary.charCodeAt(i);
+  }
+  return new Blob([bytes], {type:mime});
+}
+
+function isMobileSaveDevice(){
+  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '') ||
+    (navigator.maxTouchPoints > 1 && window.matchMedia('(max-width: 1024px)').matches);
+}
+
+function downloadImageBlob(blob, filename){
+  const link=document.createElement('a');
+  const url=URL.createObjectURL(blob);
+  link.download=filename;
+  link.href=url;
+  link.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
+async function saveImageBlob(blob, filename, title, text){
+  downloadImageBlob(blob, filename);
+  return 'download';
+}
+
+async function downloadWallpaper(){
   const data=getWallpaperSourceData();
   const canvas=document.createElement('canvas');
   const isDesktop = wallpaperFormat === 'desktop';
@@ -11672,22 +11724,23 @@ function downloadWallpaper(){
     ctx.fillStyle=textColor;
     ctx.font=`${item.weight} ${item.size}px Helvetica, Arial, sans-serif`;
     item.lines.forEach(line=>{
-      ctx.fillText(line, plan.x, y);
+      drawCanvasTextLine(ctx, line, plan.x, y, item.letterSpacing || 0);
       y += item.lineHeight;
     });
     ctx.restore();
   });
 
-  const link=document.createElement('a');
   const safeName=(data.name || 'birthday-color').replace(/[^a-z0-9]+/gi,'-').toLowerCase();
-  link.download=`${safeName}-${isDesktop ? 'desktop' : 'mobile'}-wallpaper.png`;
-  link.href=canvas.toDataURL('image/png');
-  link.click();
+  const filename=`${safeName}-${isDesktop ? 'desktop' : 'mobile'}-wallpaper.png`;
+  const blob=canvasToPngBlob(canvas);
+  const saveMethod=await saveImageBlob(blob, filename, `${data.name} Wallpaper`, `${data.dateLabel} birthday color wallpaper`);
+  if(saveMethod === 'cancelled')return;
   trackAnalyticsEvent('download_wallpaper', {
     ...getAnalyticsColorParams(data),
     wallpaper_format: isDesktop ? 'desktop' : 'mobile',
     wallpaper_japanese: wallpaperOptions.japanese && data.nativeName ? 'on' : 'off',
-    wallpaper_meaning: wallpaperOptions.meaning ? 'on' : 'off'
+    wallpaper_meaning: wallpaperOptions.meaning ? 'on' : 'off',
+    save_method: saveMethod
   });
 }
 
@@ -11844,7 +11897,7 @@ function drawColorCardToCanvas(canvas){
   const cardX=0;
   const cardY=0;
   const sharpCorners=colorCardCornerMode === 'sharp';
-  const cardRadius=sharpCorners ? 6 : 34;
+  const cardRadius=sharpCorners ? 6 : 64;
   ctx.save();
   roundRectPath(ctx,cardX,cardY,cardW,cardH,cardRadius);
   ctx.clip();
@@ -11857,7 +11910,7 @@ function drawColorCardToCanvas(canvas){
   const swatchW=cardW-margin*2;
   const swatchH=620;
   ctx.save();
-  roundRectPath(ctx,swatchX,swatchY,swatchW,swatchH,sharpCorners ? 4 : 18);
+  roundRectPath(ctx,swatchX,swatchY,swatchW,swatchH,sharpCorners ? 4 : 48);
   ctx.clip();
   ctx.fillStyle=data.hex;
   ctx.fillRect(swatchX,swatchY,swatchW,swatchH);
@@ -11870,8 +11923,8 @@ function drawColorCardToCanvas(canvas){
   ctx.textAlign='left';
   ctx.textBaseline='top';
   const ownerLine=colorCardOwnerLine(data.owner);
-  const ownerBase=60;
-  const ownerSize=fitCanvasOneLineTextSize(ctx, ownerLine, textMax*0.88, ownerBase, 24, '800');
+  const ownerBase=80;
+  const ownerSize=fitCanvasOneLineTextSize(ctx, ownerLine, textMax*0.94, ownerBase, 30, '800');
   const shrinkRatio=Math.min(1, ownerSize / ownerBase);
   ctx.font=`800 ${ownerSize}px Helvetica, Arial, sans-serif`;
   ctx.fillText(ownerLine,textX,y);
@@ -11879,14 +11932,14 @@ function drawColorCardToCanvas(canvas){
 
   y+=18;
   ctx.fillStyle='rgba(0,0,0,0.48)';
-  const dateSize=Math.max(21, 33 * shrinkRatio);
+  const dateSize=Math.max(24, 38 * shrinkRatio);
   ctx.font=`500 ${dateSize}px Helvetica, Arial, sans-serif`;
   ctx.fillText(data.dateLabel,textX,y);
-  y+=Math.max(50, dateSize * 1.9);
+  y+=Math.max(56, dateSize * 1.85);
 
   ctx.fillStyle='#050505';
-  const baseFittedNameSize=fitCanvasOneLineTextSize(ctx, data.name, textMax*0.88, 42, 21, '500');
-  const nameSize=Math.max(21, Math.min(42, baseFittedNameSize * shrinkRatio));
+  const baseFittedNameSize=fitCanvasOneLineTextSize(ctx, data.name, textMax*0.9, 48, 24, '500');
+  const nameSize=Math.max(24, Math.min(48, baseFittedNameSize * shrinkRatio));
   ctx.font=`500 ${nameSize}px Helvetica, Arial, sans-serif`;
   ctx.fillText(data.name,textX,y);
   ctx.restore();
@@ -11896,31 +11949,30 @@ function getColorCardFileName(){
   const safeName=(data.name || 'birthday-color').replace(/[^a-z0-9]+/gi,'-').toLowerCase();
   return `${safeName}-color-card.png`;
 }
+function makeColorCardImage(){
+  const data=getColorCardSourceData();
+  const canvas=document.createElement('canvas');
+  drawColorCardToCanvas(canvas);
+  const blob=canvasToPngBlob(canvas);
+  const filename=getColorCardFileName();
+  return {data, blob, filename};
+}
 function makeColorCardBlob(){
-  return new Promise(resolve=>{
-    const canvas=document.createElement('canvas');
-    drawColorCardToCanvas(canvas);
-    canvas.toBlob(blob=>resolve(blob),'image/png');
-  });
+  return Promise.resolve(makeColorCardImage().blob);
 }
 async function downloadColorCard(){
-  const blob=await makeColorCardBlob();
-  if(!blob)return;
-  const data=getColorCardSourceData();
-  const link=document.createElement('a');
-  const url=URL.createObjectURL(blob);
-  link.download=getColorCardFileName();
-  link.href=url;
-  link.click();
+  const {data, blob, filename}=makeColorCardImage();
+  const saveMethod=await saveImageBlob(blob, filename, `${data.owner}'s Color Card`, `${data.dateLabel}: ${data.name}`);
+  if(saveMethod === 'cancelled')return;
   trackAnalyticsEvent('download_color_card', {
     ...getAnalyticsColorParams(data),
     card_corner: colorCardCornerMode,
-    card_owner_filled: getColorCardOwnerName() === 'Your' ? 'no' : 'yes'
+    card_owner_filled: getColorCardOwnerName() === 'Your' ? 'no' : 'yes',
+    save_method: saveMethod
   });
-  setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 async function shareColorCard(){
-  const data=getColorCardSourceData();
+  const {data, blob, filename}=makeColorCardImage();
   const title=`${data.owner}’s Color`;
   const text=`${title}: ${data.name}`;
   const url=getResultShareUrl();
@@ -11937,10 +11989,9 @@ async function shareColorCard(){
       // file sharing, fall back to the normal native share sheet with link/text.
       if(window.isSecureContext){
         try{
-          const blob=await makeColorCardBlob();
-          const file=blob ? new File([blob], getColorCardFileName(), {type:'image/png'}) : null;
+          const file=blob ? new File([blob], filename, {type:'image/png', lastModified:Date.now()}) : null;
           if(file && (!navigator.canShare || navigator.canShare({files:[file]}))){
-            await navigator.share({title, text, files:[file]});
+            await navigator.share({files:[file]});
             return;
           }
         }catch(fileShareError){
