@@ -8,9 +8,6 @@
 
 <!-- Site Aciklamasi -->
 <meta name="description" content="A small color ritual for birthdays. Choose a date to discover your personal color, its Japanese label, keywords, and a short meaning.">
-<script>
-  document.title = 'Birthday Color Archive';
-</script>
 <!-- Favicon -->
 <link rel="icon" type="image/png" sizes="192x192" href="/favicon.png">
 <link rel="apple-touch-icon" href="/favicon.png">
@@ -10690,6 +10687,37 @@ const colorData = [
 function getDayOfYear(m,d){const d0=[0,31,60,91,121,152,182,213,244,274,305,335];return d0[m-1]+d;}
 function getColorForDate(m,d){return colorData[(getDayOfYear(m,d)-1)%colorData.length];}
 
+const SOUTHERN_SEASON_MAP = {
+  Winter: 'Summer',
+  Spring: 'Autumn',
+  Summer: 'Winter',
+  Autumn: 'Spring'
+};
+const SOUTHERN_TIMEZONE_PATTERNS = [
+  /^Australia\//i,
+  /^Antarctica\//i,
+  /^Pacific\/(Auckland|Chatham|Fiji|Tongatapu|Apia|Norfolk|Noumea|Port_Moresby|Bougainville|Guadalcanal|Efate|Nauru|Rarotonga|Niue|Pitcairn|Tahiti|Marquesas|Gambier|Easter)$/i,
+  /^Africa\/(Johannesburg|Maseru|Mbabane|Maputo|Harare|Lusaka|Gaborone|Windhoek|Blantyre|Luanda|Brazzaville|Kinshasa|Lubumbashi|Dar_es_Salaam|Kigali|Bujumbura)$/i,
+  /^Indian\/(Mauritius|Reunion|Antananarivo|Comoro|Mayotte|Mahe|Christmas|Cocos|Kerguelen)$/i,
+  /^Atlantic\/(Stanley|South_Georgia)$/i,
+  /^America\/(Argentina\/.+|Buenos_Aires|Cordoba|Rosario|Catamarca|Jujuy|Mendoza|Santiago|Punta_Arenas|Montevideo|Sao_Paulo|Bahia|Campo_Grande|Cuiaba|Fortaleza|Recife|Araguaina|Belem|Maceio|Santarem|Manaus|Porto_Velho|Rio_Branco|Eirunepe|Noronha|Asuncion|La_Paz|Lima|Guayaquil)$/i
+];
+function getViewerTimezone(){
+  try{
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+  }catch(err){
+    return '';
+  }
+}
+function isSouthernHemisphereViewer(){
+  const timezone=getViewerTimezone();
+  return SOUTHERN_TIMEZONE_PATTERNS.some(pattern=>pattern.test(timezone));
+}
+const viewerIsSouthernHemisphere=isSouthernHemisphereViewer();
+function getDisplaySeason(season){
+  return viewerIsSouthernHemisphere ? (SOUTHERN_SEASON_MAP[season] || season) : season;
+}
+
 function createPicker(listEl, initialItems, initialIndex) {
   const ITEM_H=54, PAD=2;
   const c=listEl.parentElement;
@@ -10962,13 +10990,15 @@ function findColor(options={}){
   window.currentResultMonth=m;
   window.currentResultDay=d;
   const color=getColorForDate(m,d),doy=getDayOfYear(m,d);
+  const displaySeason=getDisplaySeason(color.season);
   document.getElementById('resultName').textContent=color.name;
   document.getElementById('resultMiniName').textContent=color.name;
   document.getElementById('resultGhostName').textContent=color.name;
   const swatch=document.getElementById('meaningSwatch');
   if(swatch){swatch.style.backgroundColor=color.hex; swatch.setAttribute('data-name', color.name); swatch.setAttribute('aria-label', color.name);}
   document.getElementById('resultNative').textContent=color.nativeName || '';
-  document.getElementById('resultDate').textContent=MONTHS[m-1]+' '+d+' · '+color.season;
+  const dateSeparator=String.fromCharCode(183);
+  document.getElementById('resultDate').textContent=MONTHS[m-1]+' '+d+' '+dateSeparator+' '+displaySeason;
   document.getElementById('resultHex').textContent=color.hex;
   document.getElementById('resultDescription').innerHTML=formatDescriptionHTML(color.description);
   const kw=document.getElementById('resultKeywords');
@@ -10979,7 +11009,7 @@ function findColor(options={}){
     el.textContent=word;
     kw.appendChild(el);
   });
-  document.getElementById('resultSeason').textContent=color.season;
+  document.getElementById('resultSeason').textContent=displaySeason;
   document.getElementById('resultHexBot').textContent=color.hex;
   document.getElementById('resultDay').textContent=doy+' / 366';
   const rs=document.getElementById('resultScreen');
@@ -11313,7 +11343,7 @@ const SEASONS = ["Winter", "Spring", "Summer", "Autumn"];
 const MONTH_ABBR = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 let exploreMode = 'month';
 let exploreMonthIndex = null;
-let exploreSeason = 'Spring';
+let exploreSeason = null;
 
 function getMonthDayFromIndex(index){
   let remaining = index + 1;
@@ -11324,6 +11354,13 @@ function getMonthDayFromIndex(index){
     remaining -= DAYS_IN_MONTH[m];
   }
   return {month:12, day:31, doy:index+1};
+}
+
+function getCurrentDisplaySeason(){
+  const now=new Date();
+  const month=now.getMonth()+1;
+  const day=Math.min(now.getDate(), DAYS_IN_MONTH[now.getMonth()] || 31);
+  return getDisplaySeason(getColorForDate(month,day).season);
 }
 
 function updateExploreModeButtons(){
@@ -11359,6 +11396,7 @@ function renderExplorePage(){
   const grid=document.getElementById('exploreGrid');
   if(!filterWrap || !grid)return;
   if(exploreMonthIndex===null){exploreMonthIndex=new Date().getMonth();}
+  if(exploreSeason===null){exploreSeason=getCurrentDisplaySeason();}
   updateExploreModeButtons();
   filterWrap.innerHTML='';
   grid.innerHTML='';
@@ -11387,7 +11425,7 @@ function renderExplorePage(){
   colorData.forEach((color,index)=>{
     const date=getMonthDayFromIndex(index);
     if(exploreMode==='month' && date.month-1!==exploreMonthIndex)return;
-    if(exploreMode==='season' && color.season!==exploreSeason)return;
+    if(exploreMode==='season' && getDisplaySeason(color.season)!==exploreSeason)return;
 
     const card=document.createElement('button');
     card.type='button';
@@ -11473,6 +11511,8 @@ function getWallpaperSourceData(){
   const color=getColorForDate(m,d);
   return {
     ...color,
+    season:getDisplaySeason(color.season),
+    originalSeason:color.season,
     month:m,
     day:d,
     dateLabel:`${MONTH_ABBR[m-1]} ${String(d).padStart(2,'0')}`
@@ -11789,6 +11829,8 @@ function getColorCardSourceData(){
   const color=getColorForDate(m,d);
   return {
     ...color,
+    season:getDisplaySeason(color.season),
+    originalSeason:color.season,
     month:m,
     day:d,
     dateLabel:`${MONTH_ABBR[m-1]} ${String(d).padStart(2,'0')}`,
