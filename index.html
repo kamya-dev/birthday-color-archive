@@ -4,10 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!-- Site Basligi -->
-<title>Birthday Color Archive</title>
+<title>Learn Your Birthday Color | Birthday Color Archive</title>
 
 <!-- Site Aciklamasi -->
 <meta name="description" content="A small color ritual for birthdays. Choose a date to discover your personal color, its Japanese label, keywords, and a short meaning.">
+<script>
+  document.title = 'Birthday Color Archive';
+</script>
 <!-- Favicon -->
 <link rel="icon" type="image/png" sizes="192x192" href="/favicon.png">
 <link rel="apple-touch-icon" href="/favicon.png">
@@ -10695,6 +10698,7 @@ function createPicker(listEl, initialItems, initialIndex) {
   let selIdx=initialIndex;
   let curY=0;
   let drag=false, lastY=0, vel=0, lastT=0, af=null;
+  let wheelAccum=0, wheelResetTimer=null, wheelLastStepAt=0, wheelLastEventAt=0;
   let onChangeCb=null;
   let lastReportedIdx=selIdx;
 
@@ -10733,7 +10737,19 @@ function createPicker(listEl, initialItems, initialIndex) {
   c.addEventListener('wheel',e=>{
     e.preventDefault();
     if(af){cancelAnimationFrame(af);af=null;}
-    const step=e.deltaY>0?1:-1;
+    const now=performance.now();
+    let delta=e.deltaY;
+    if(e.deltaMode===1)delta*=18;
+    if(e.deltaMode===2)delta*=c.getBoundingClientRect().height || 162;
+    if(now-wheelLastEventAt>300)wheelAccum=0;
+    wheelLastEventAt=now;
+    wheelAccum+=delta;
+    clearTimeout(wheelResetTimer);
+    wheelResetTimer=setTimeout(()=>{wheelAccum=0;},260);
+    if(Math.abs(wheelAccum)<34 || now-wheelLastStepAt<90)return;
+    const step=wheelAccum>0?1:-1;
+    wheelAccum=0;
+    wheelLastStepAt=now;
     setPos(selIdx+step,true);
   },{passive:false});
   return {
